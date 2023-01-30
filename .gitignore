@@ -4,3 +4,4 @@ test.py
 venv
 categories.txt
 test.txt
+database/settings.py

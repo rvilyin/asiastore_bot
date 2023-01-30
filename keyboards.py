@@ -1,8 +1,13 @@
 
 from aiogram.types import ReplyKeyboardRemove, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
-
+from database.views import *
+from database.settings import db
 from parse import *
 
+
+db.connect()
+Goods.create_table()
+delete_all()
 
 def btn(name):
     name2 = ''.join([x for x in name if x.isalpha()])
@@ -21,7 +26,7 @@ def btn(name):
 class Keyboard:
     cats_to_urls = {}
     def __init__(self, url, name):
-        categories_urls = get_categories(BASE_URL + url)
+        categories_urls = get_categories(url)
         categories = list(categories_urls.keys())
         categories2 = self.divide_cats(categories)
         Keyboard.cats_to_urls.update(categories_urls)
@@ -49,6 +54,14 @@ class Keyboard:
             kb.insert(InlineKeyboardButton(category, callback_data = 'cat' + category))
         return kb
 
+    @staticmethod
+    def previous_button(name, i):
+        return InlineKeyboardButton('<<', callback_data='previous' + name + ',' + str(i-1))
+
+    @staticmethod
+    def next_button(name, i):
+        return InlineKeyboardButton('>>', callback_data='next' + name + ',' + str(i+1))
+
     def get_keyboards(self, categories, name):
         kbs = []
         if len(categories) == 1:
@@ -59,38 +72,48 @@ class Keyboard:
         for i in range(len(categories)):
             kb = self.add_categories_to_keyboard(categories[i])
             if i == 0:
-                kb.add(InlineKeyboardButton('>>', callback_data = 'next' + name + str(i+1)))
+                kb.add(self.next_button(name, i))
             elif i == len(categories) - 1:
-                kb.add(InlineKeyboardButton('<<', callback_data = 'previous' + name + str(i-1)))
+                kb.add(self.previous_button(name, i))
             else:
-                kb.row(
-                    InlineKeyboardButton('<<', callback_data = 'previous' + name + str(i-1)),
-                    InlineKeyboardButton('>>', callback_data = 'next' + name + str(i+1))
-                )
+                kb.row(self.previous_button(name, i), self.next_button(name, i))
             kb.add(InlineKeyboardButton('🏠', callback_data = 'home'))
             kbs.append(kb)
         
-
         return kbs
 
+
 class KeyboardGoods(Keyboard):
+    goods_to_keyboards = {}
     def __init__(self, category):
-        goods_urls = parse_goods(Keyboard.cats_to_urls[category])
-        goods_urls2 = dict(enumerate(goods_urls.values()))
-        self.goods = list(goods_urls.keys())
-        goods2 = self.divide_cats(self.goods)
-        self.keyboards = self.get_keyboards(goods2, category)
+        if category not in KeyboardGoods.goods_to_keyboards.keys():
+            goods_urls = parse_goods(Keyboard.cats_to_urls[category])
+            for good, url in goods_urls.items():
+                post_good(good, url)
+            goods2 = self.divide_cats(list(goods_urls.keys()))
+            keyboards = self.get_keyboards(goods2, category)
+            KeyboardGoods.goods_to_keyboards.update({category: keyboards})
+
+
 
     def add_categories_to_keyboard(self, goods):
         kb = InlineKeyboardMarkup(row_width = 1)
         for j in range(len(goods)):
             good = goods[j]
-            index = goods[j].find(',') + 1
-            name = good[index:]
-            kb.insert(InlineKeyboardButton(name, callback_data = 'good' + str(self.goods.index(good))))
+            if good.startswith('iPhone'):
+                index = good.find(',') + 1
+                name = good[index:]
+            elif good.startswith('Apple Mac Studio'):
+                name = self.get_macstudio_name(good)
+            kb.insert(InlineKeyboardButton(name, callback_data = 'good' + str(get_id_by_name(good))))
         return kb
 
-
+    @staticmethod
+    def get_macstudio_name(name):
+        l = name.split(',')
+        index = l[1].index('(')
+        l[1] = l[1][1:index-1]
+        return ','.join(l[1:-1])
         
 
 

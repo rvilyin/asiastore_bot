@@ -10,7 +10,9 @@ from aiogram.types.message import ContentType
 from config import TOKEN, PAYMENT_TOKEN
 from messages import MESSAGES
 import keyboards as kb
-from keyboards import Keyboard
+
+from database.views import *
+
 
 logging.basicConfig(format=u'%(filename)+13s [ LINE:%(lineno)-4s] %(levelname)-8s [%(asctime)s] %(message)s',
                     level=logging.INFO)
@@ -60,12 +62,16 @@ async def process_callback_categories(callback_query):
 
 @dp.callback_query_handler(lambda c: c.data and (c.data.startswith('next') or c.data.startswith('previous')))
 async def process_callback_next_page(callback_query):
+    index = callback_query.data.index(',')
     if callback_query.data.startswith('next'):
-        category = callback_query.data[4:-1]
+        category = callback_query.data[4:index]
     else:
-        category = callback_query.data[8:-1]
-    page = int(callback_query.data[-1])
-    await callback_query.message.edit_reply_markup(kb.keyboards[category].keyboards[page])
+        category = callback_query.data[8:index]
+    page = int(callback_query.data[index+1:])
+    if category in kb.keyboards.keys():
+        await callback_query.message.edit_reply_markup(kb.keyboards[category].keyboards[page])
+    elif category.startswith('iPhone'):
+        await callback_query.message.edit_reply_markup(kb.KeyboardGoods(category).goods_to_keyboards[category][page])
 
 
 @dp.callback_query_handler(lambda c: c.data and c.data.startswith('cat'))
@@ -74,18 +80,27 @@ async def process_callback_goods(callback_query):
     # print(kb.Keyboard.cats_to_urls[category])
     # keyboard = kb.InlineKeyboardMarkup()
     # keyboard.add(kb.InlineKeyboardButton(Keyboard.cats_to_urls[category], callback_data=category))
-    await callback_query.message.edit_text(text = category, reply_markup = kb.KeyboardGoods(category).keyboards[0])
+    await callback_query.message.edit_text(text = category, reply_markup = kb.KeyboardGoods(category).goods_to_keyboards[category][0])
 
 
 
 @dp.callback_query_handler(lambda c: c.data == 'home')
 async def process_callback_home(callback_query):
-    await callback_query.message.edit_reply_markup(kb.category_kb)
-    
+    await callback_query.message.edit_text(text = 'Категории:', reply_markup = kb.category_kb)
+
+
+@dp.callback_query_handler(lambda c: c.data and c.data.startswith('good'))
+async def catch_good(callback_query):
+    print(callback_query.data)
 
 # @dp.message_handler(commands = ['test'])
 # async def process_test(message):
 #     print(kb.cats_to_urls)
+
+@dp.message_handler(commands = ['goods'])
+async def show_good(message):
+    print(get_goods())
+
 
 
 @dp.message_handler()

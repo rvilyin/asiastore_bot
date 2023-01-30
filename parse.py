@@ -1,6 +1,7 @@
 
 import requests
 from bs4 import BeautifulSoup as BS
+from database.views import *
 
 BASE_URL = 'https://asiastore.kg/'
 
@@ -10,7 +11,7 @@ def get_soup(url):
     return soup
 
 def get_categories(url):
-    soup = get_soup(url)
+    soup = get_soup(BASE_URL + url)
     category_list = soup.find('div', class_ = 'category-list')
     all_a = category_list.find_all('a')
     # urls = category_list.find_all('a')
@@ -24,11 +25,13 @@ def parse_goods(url):
     soup = get_soup(url)
     row = soup.find('div', class_ = 'row cat-flex')
     h4 = row.find_all('h4')
-    names_to_urls = {h.text.strip(): h.find('a').get('href') for h in h4}
-    print(names_to_urls)
+    if url.startswith('http://asiastore.kg/apple-iphone'):
+        names_to_urls = {h.text.strip(): h.find('a').get('href') for h in h4}
+
+    elif url == 'http://asiastore.kg/apple-mac/mac-studio/':
+        names_to_urls = {h.text.strip(): h.find('a').get('href') for h in h4 if h.text.strip().startswith('Apple Mac Studio')}
     
     return names_to_urls
-
 
 
 
