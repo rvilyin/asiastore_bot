@@ -94,13 +94,21 @@ class KeyboardGoods(Keyboard):
             keyboards = self.get_keyboards(goods2, category)
             KeyboardGoods.goods_to_keyboards.update({category: keyboards})
 
+    @staticmethod
+    def get_macstudio_name(name):
+        l = name.split(',')
+        index = l[1].index('(')
+        l[1] = l[1][1:index-1]
+        return ','.join(l[1:-1])
 
 
     def add_categories_to_keyboard(self, goods):
         kb = InlineKeyboardMarkup(row_width = 1)
         for j in range(len(goods)):
             good = goods[j]
-            if good.startswith('iPhone'):
+            if good.startswith('Apple iPhone SE'):
+                name = good[16:]
+            elif good.startswith('iPhone') or good.startswith('Apple iPhone'):
                 index = good.find(',') + 1
                 name = good[index:]
             elif good.startswith('Apple Mac Studio'):
@@ -108,12 +116,6 @@ class KeyboardGoods(Keyboard):
             kb.insert(InlineKeyboardButton(name, callback_data = 'good' + str(get_id_by_name(good))))
         return kb
 
-    @staticmethod
-    def get_macstudio_name(name):
-        l = name.split(',')
-        index = l[1].index('(')
-        l[1] = l[1][1:index-1]
-        return ','.join(l[1:-1])
         
 
 

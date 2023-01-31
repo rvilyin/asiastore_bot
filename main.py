@@ -27,6 +27,14 @@ async def delete_message(message, sleep_time = 0):
     with suppress(MessageCantBeDeleted, MessageToDeleteNotFound):
         await message.delete()
 
+async def animation_handler(query):
+    for i in range(0, 101, 10):
+        await query.message.edit_text(text = f"{i}%")
+        await asyncio.sleep(0.001)
+
+async def get_keyboard(category):
+    return kb.KeyboardGoods(category).goods_to_keyboards[category][0]
+
 
 @dp.message_handler(commands = ['testdel'])
 async def process_del_message(message):
@@ -77,10 +85,14 @@ async def process_callback_next_page(callback_query):
 @dp.callback_query_handler(lambda c: c.data and c.data.startswith('cat'))
 async def process_callback_goods(callback_query):
     category = callback_query.data[3:]
-    # print(kb.Keyboard.cats_to_urls[category])
-    # keyboard = kb.InlineKeyboardMarkup()
-    # keyboard.add(kb.InlineKeyboardButton(Keyboard.cats_to_urls[category], callback_data=category))
-    await callback_query.message.edit_text(text = category, reply_markup = kb.KeyboardGoods(category).goods_to_keyboards[category][0])
+    loop = asyncio.get_running_loop()
+    tsk1 = loop.create_task(animation_handler(callback_query))
+    tsk2 = loop.create_task(get_keyboard(category))
+
+    await asyncio.sleep(3)
+    keyboard = tsk2.result()
+
+    await callback_query.message.edit_text(text = category, reply_markup = keyboard)
 
 
 
